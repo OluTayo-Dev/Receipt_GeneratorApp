@@ -1,5 +1,5 @@
 import express from "express";
-import {User, Profile} from "../model/User.js";
+import {Profile, User} from "../model/User.js";
 
 
 

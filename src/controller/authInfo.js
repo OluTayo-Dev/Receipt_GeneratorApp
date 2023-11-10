@@ -1,5 +1,5 @@
 import express from "express";
-import {User, Profile} from "../model/User.js";
+import {Profile, User} from "../model/User.js";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
@@ -57,7 +57,7 @@ const signIn = async (req, res) => {
             const maxAge = 3 * 606 * 60;
             const token = jwt.sign(
                 { id: isMatch._id, email },
-                process.env.JWT_SECRET_KEY,
+                process.env.jwt_secret_key,
                 { expiresIn: maxAge}
             );
             res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000})
@@ -68,6 +68,7 @@ const signIn = async (req, res) => {
 }
 
 const getUsers = async (req, res) => {
+   
     const users = await User.find({}).populate({path:'userDetails', select: 'companyName address phoneNumber plan'})
     res.json(users)
 }

@@ -32,7 +32,7 @@ const profileSchema = new Schema({
   user: {
     type: Schema.Types.ObjectId,
     ref: 'User', 
-    required: true
+   // required: true
   },
 
 },{
@@ -109,7 +109,9 @@ userSchema.methods.createResetPasswordToken = function(){
  console.log(resetToken, this.passwordResetToken);
  return resetToken;
 }
-// Create a model for the user
-const User = mongoose.model('User', userSchema);
 
-export  {User, Profile}
+const User = mongoose.model('User', userSchema)
+
+
+export {User, Profile}
+
