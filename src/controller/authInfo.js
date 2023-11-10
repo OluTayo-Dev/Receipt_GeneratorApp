@@ -103,7 +103,7 @@ const forgotPassword = async (req, res) => {
         from: 'youremail@gmail.com',
         to: user.email,
         subject: '234Web Receipt Reset password Link',
-        text:`Click the link to reset Your password http://localhost:6002/api/auth/resetPassword/${user._id}/${token}`
+        text:`Click the link to reset Your password https://receipt-6j94.onrender.com/api/auth/resetPassword/${user._id}/${token}`
       };
       
       transporter.sendMail(mailOptions, function(error, info) {
