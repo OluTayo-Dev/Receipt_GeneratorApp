@@ -52,7 +52,7 @@ const signIn = async (req, res) => {
         return res.status(401).json({ error:"Invalid credentials"});
 
     }else {
-       bcryptjs.compare(password, isMatch.password).then(function (isMatch) {
+     bcryptjs.compare(password, isMatch.password).then(function (isMatch) {
          if(isMatch) {
             const maxAge = 3 * 606 * 60;
             const token = jwt.sign(
@@ -60,8 +60,11 @@ const signIn = async (req, res) => {
                 process.env.jwt_secret_key,
                 { expiresIn: maxAge}
             );
+
             res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000})
             res.status(201).json({ message: "Login succesful", isMatch, token})
+         } else {
+          res.status(400).json({ error: "Incorrect password"});
          }
        })
     }
@@ -111,7 +114,7 @@ const forgotPassword = async (req, res) => {
         if (error) {
           console.log(error);
         } else {
-          return res.send({ Status: "success"})
+           res.status(200).json({ message: "success"})
         }
       }); 
     })
