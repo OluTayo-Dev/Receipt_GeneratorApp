@@ -1,4 +1,3 @@
-import express from "express";
 import {Profile, User} from "../model/User.js";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -7,72 +6,161 @@ import nodemailer from "nodemailer";
 
 
 
-
-
 const signup = async (req, res) => {
-    const { username, email, password} = req.body;
+  const { username, email, password } = req.body;
 
-    const userExists = await User.findOne({ email })  
+  try {
+      // Check if the user already exists
+      const userExists = await User.findOne({ email });
 
-    if(userExists) {
-     return res.status(400)
-        .json({ message:"User already exists"})
-    }
-    if (email.indexOf("@") === -1) {
-         res.status(400).json({ message: "Invalid email"});
-    }
-    if (email.indexOf(".") === -1) {
-         res.status(400).json({ message: "Invalid email"});
-    }
+      if (userExists) {
+          return res.status(400).json({ message: "User already exists" });
+      }
 
-    const user = await User.create({ 
-        username,
-        email,
-        password,
-    });
+      // Validate email format
+      if (email.indexOf("@") === -1 || email.indexOf(".") === -1) {
+          return res.status(400).json({ message: "Invalid email" });
+      }
 
-    if(user){
-        res.status(201).json({ message: "User created successfully", user,
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        password: user.password
-      })
-    }
-}
+      // Create a new Profile document
+      const profile = await Profile.create({
+          companyName: req.companyName, // Add any additional profile fields here
+          address: req.address,
+          phoneNo: req.phoneNo,
+          plan: req.plan,
+          logo: req.logo,
+      });
+
+      // Create a new User and associate it with the Profile
+      const user = await User.create({
+          username,
+          email,
+          password,
+          profile: profile._id, // Store the Profile's _id in the user's profile field
+      });
+
+      // Return the response
+      res.status(201).json({
+          message: "User created successfully",
+          user: {
+              _id: user._id,
+              username: user.username,
+              email: user.email,
+              password: user.password,
+              profile: profile, // Return the entire profile document if needed
+          },
+      });
+  } catch (error) {
+      console.error("Error creating user and profile:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+
+// const signup = async (req, res) => {
+//     const { username, email, password} = req.body;
+
+//     const userExists = await User.findOne({ email })  
+
+//     if(userExists) {
+//      return res.status(400)
+//         .json({ message:"User already exists"})
+//     }
+//     if (email.indexOf("@") === -1) {
+//          res.status(400).json({ message: "Invalid email"});
+//     }
+//     if (email.indexOf(".") === -1) {
+//          res.status(400).json({ message: "Invalid email"});
+//     }
+
+//     const user = await User.create({ 
+//         username,
+//         email,
+//         password,
+     
+//     });
+
+//     if(user){
+//         res.status(201).json({ message: "User created successfully", user,
+//         _id: user._id,
+//         username: user.username,
+//         email: user.email,
+//         password: user.password,
+     
+//       })
+//     }
+// }
 
 const signIn = async (req, res) => {
-    const {email, password} = req.body;
+  const { email, password } = req.body;
+
+  if (!email && !password) {
+      return res.status(404).json({ message: "Invalid credentials" });
+  }
+
+  try {
+      const user = await User.findOne({ email });
+
+      if (!user) {
+          return res.status(401).json({ error: "Invalid credentials" });
+      } else {
+          bcryptjs.compare(password, user.password).then(function (isMatch) {
+              if (isMatch) {
+                  const maxAge = 3 * 606 * 60;
+                  const token = jwt.sign(
+                      { id: user._id, email },
+                      process.env.jwt_secret_key,
+                      { expiresIn: maxAge }
+                  );
+
+                  res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000 });
+                  res.status(201).json({ message: "Login successful", userId: user._id, token });
+              } else {
+                  res.status(400).json({ error: "Incorrect password" });
+              }
+          });
+      }
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 
 
-    const isMatch = await User.findOne({email}) 
+// const signIn = async (req, res) => {
+//     const {email, password} = req.body;
 
-    if(!isMatch) {
+//    if (!email && !password) {
+//     return res.status(404).json({ message: "Invalid credentials"})
+//    }
+//     const isMatch = await User.findOne({email}) 
 
-        return res.status(401).json({ error:"Invalid credentials"});
+//     if(!isMatch) {
 
-    }else {
-     bcryptjs.compare(password, isMatch.password).then(function (isMatch) {
-         if(isMatch) {
-            const maxAge = 3 * 606 * 60;
-            const token = jwt.sign(
-                { id: isMatch._id, email },
-                process.env.jwt_secret_key,
-                { expiresIn: maxAge}
-            );
+//         return res.status(401).json({ error:"Invalid credentials"});
 
-            res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000})
-            res.status(201).json({ message: "Login succesful", isMatch, token})
-         } else {
-          res.status(400).json({ error: "Incorrect password"});
-         }
-       })
-    }
-}
+//     }else {
+//      bcryptjs.compare(password, isMatch.password).then(function (isMatch) {
+//          if(isMatch) {
+//             const maxAge = 3 * 606 * 60;
+//             const token = jwt.sign(
+//                 { id: isMatch._id, email },
+//                 process.env.jwt_secret_key,
+//                 { expiresIn: maxAge}
+//             );
+
+//             res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000})
+//             res.status(201).json({ message: "Login succesful", isMatch, token})
+//          } else {
+//           res.status(400).json({ error: "Incorrect password"});
+//          }
+//        })
+//     }
+// }
 
 const getUsers = async (req, res) => {
    
-    const users = await User.find({}).populate({path:'userDetails', select: 'companyName address phoneNumber plan'})
+    const users = await User.find({}).populate('profile')
     res.json(users)
 }
 

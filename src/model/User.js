@@ -2,95 +2,60 @@ import mongoose from "mongoose";
 import bcryptjs from "bcryptjs";
 import crypto from "crypto";
 
-const Schema = mongoose.Schema;
 
 
-// Define a schema for the profile
-const profileSchema = new Schema({
-  companyName: {
-    type: String,
-    required: true,
-  },
-  address: {
-    type: String,
-    required: true,
-  },
-  phoneNumber: {
-    type: Number,
-    required: true,
-  },
-  logo: {
-    type: String,
-    required: true,
-  },
-  plan: {
-    type: String,
-    required: true,
-    enum: ["plan1", "plan2", "plan3", "plan4", "plan5"],
-  },
-
-  user: {
-    type: Schema.Types.ObjectId,
-    ref: 'User', 
-   // required: true
-  },
-
-},{
-
-  timestamps: true
+// Define the profileSchema
+const profileSchema = new mongoose.Schema({
+    companyName: String,
+    Address: String,
+    phoneNo: String,
+    plan: String,
+    logo: String
+    // Other profile fields
 });
 
-// Create a model for the profile
+// Define the profile model
 const Profile = mongoose.model('Profile', profileSchema);
 
-// Define a schema for the user
-const userSchema = new Schema({
-  username: {
-    type: String,
-    required: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  password: {
-    type: String,
-    required: true,
-    minLenght: 8, // Corrected typo from "minLenght" to "minLength"
-  },
-  passwordResetToken: String,
-  passwordRestTokenExpires: Number
+// Define the userSchema with a reference to the Profile model
+const userSchema = new mongoose.Schema({
+    username: {
+      type: String,
+      required: true,
+    },
 
-}, {
-  timestamps: true,
-});
+    email: {
+      type: String,
+      required: true,
+      unique: true
+    },
 
-userSchema.virtual('userDetails', {
-  ref: 'Profile',
-  localField: '_id',
-  foreignField: 'user',
-});
+    password: {
+      type: String
+    },
+    profile: [{ 
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Profile'
+    }],
+    createdOn: {type: Date, default: Date.now }
+}).pre('save', async function (next) {
+   if (!this.isModified('password')) {
 
-userSchema.set('toObject', { virtuals: true});
-userSchema.set('toJSON', { virtuals: true});
+   }
 
+   const salt = await bcryptjs.genSalt();
+   this.password = await bcryptjs.hash(this.password, salt);
 
+   next();
+})
 
-
+// Define the user model
 userSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcryptjs.compare(enteredPassword, this.password)
 
 }
 
-userSchema.pre('save', async function (next) {
-  if(!this.isModified('password')) {
-      next()
-  }
 
-  const salt = await bcryptjs.genSalt(10)
-  this.password = await bcryptjs.hash(this.password, salt)
-})
 // authSchema.methods.isPasswordChanged = async function(JWTTimestamp) {
 //     if(this.passwordChangedAt) {
 //         const paswdChangedTimestamp = parseInt(this.passChangedAt.getTime() / 1000, 10);
@@ -100,18 +65,17 @@ userSchema.pre('save', async function (next) {
 //     }
 // }
 
-userSchema.methods.createResetPasswordToken = function(){
-  const resetToken = crypto.randomBytes(32).toString('hex');
+// userSchema.methods.createResetPasswordToken = function(){
+//   const resetToken = crypto.randomBytes(32).toString('hex');
 
- this.passwordResetToken = crypto.createHash("sha256").update(resetToken).digest("hex");
- this.passwordRestTokenExpires = Date.now() * 10 * 60 * 1000;
+//  this.passwordResetToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+//  this.passwordRestTokenExpires = Date.now() * 10 * 60 * 1000;
 
- console.log(resetToken, this.passwordResetToken);
- return resetToken;
-}
+//  console.log(resetToken, this.passwordResetToken);
+//  return resetToken;
+// }
 
-const User = mongoose.model('User', userSchema)
+const User = mongoose.model('User', userSchema);
 
-
-export {User, Profile}
+export {Profile, User}
 

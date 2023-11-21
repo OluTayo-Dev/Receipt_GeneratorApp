@@ -17,7 +17,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(
     cors({
-        origin: "http://localhost:3000"
+        origin: "http://localhost:3001"
     })
 );
 
@@ -29,7 +29,7 @@ async function connect() {
     try{
         app.listen(6002, () => {
             connectDB(process.env.MONGODB_PASSWORD);
-            console.log("234 Receipt proect server is running on port 6002 ")
+            console.log("234 Receipt proect server is running on port 6002")
         })
     } catch (err) {
         console.log(err)
